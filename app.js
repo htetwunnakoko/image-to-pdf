@@ -14,7 +14,9 @@ const imageQualitySelect = document.getElementById("imageQuality");
 
 let selectedImages = [];
 
-/* Manual drag reorder */
+/*
+  Manual drag reorder
+*/
 new Sortable(preview, {
   animation: 150,
   handle: ".drag-handle",
@@ -22,24 +24,32 @@ new Sortable(preview, {
   onEnd: updateOrderFromDOM
 });
 
-/* Click upload */
+/*
+  Click upload
+*/
 imageInput.addEventListener("change", function () {
   addFiles(this.files);
   imageInput.value = "";
 });
 
-/* Drag over */
+/*
+  Drag over
+*/
 dropZone.addEventListener("dragover", function (e) {
   e.preventDefault();
   dropZone.classList.add("drag-over");
 });
 
-/* Drag leave */
+/*
+  Drag leave
+*/
 dropZone.addEventListener("dragleave", function () {
   dropZone.classList.remove("drag-over");
 });
 
-/* Drop upload */
+/*
+  Drop upload
+*/
 dropZone.addEventListener("drop", function (e) {
   e.preventDefault();
   dropZone.classList.remove("drag-over");
@@ -47,24 +57,35 @@ dropZone.addEventListener("drop", function (e) {
   addFiles(e.dataTransfer.files);
 });
 
-/* Sort button */
+/*
+  Sort by file name
+*/
 sortBtn.addEventListener("click", function () {
   sortFilesByName();
   renderPreview();
   updateStatus("Images sorted by filename.");
 });
 
-/* Clear button */
+/*
+  Clear all button
+*/
 clearBtn.addEventListener("click", function () {
-  selectedImages = [];
-  preview.innerHTML = "";
+  clearAllImages();
   updateStatus("Cleared all images.");
 });
 
-/* Remove one image */
+/*
+  Remove one image
+*/
 preview.addEventListener("click", function (e) {
   if (e.target.classList.contains("remove-btn")) {
     const id = e.target.dataset.id;
+
+    const removedItem = selectedImages.find(item => item.id === id);
+
+    if (removedItem && removedItem.previewUrl) {
+      URL.revokeObjectURL(removedItem.previewUrl);
+    }
 
     selectedImages = selectedImages.filter(item => item.id !== id);
 
@@ -73,7 +94,9 @@ preview.addEventListener("click", function (e) {
   }
 });
 
-/* Convert button */
+/*
+  Convert button
+*/
 convertBtn.addEventListener("click", async function () {
   if (selectedImages.length === 0) {
     updateStatus("ပထမဆုံး image upload လုပ်ပါ။");
@@ -86,6 +109,8 @@ convertBtn.addEventListener("click", async function () {
 
   try {
     convertBtn.disabled = true;
+    sortBtn.disabled = true;
+    clearBtn.disabled = true;
     convertBtn.textContent = "Converting...";
 
     if (pdfMode === "continuous") {
@@ -93,16 +118,30 @@ convertBtn.addEventListener("click", async function () {
     } else {
       await createNormalPdf();
     }
+
+    /*
+      PDF ထုတ်ပြီးတာနဲ့ browser ထဲက uploaded images,
+      preview, input, object URLs တွေကို clear လုပ်မယ်
+    */
+    setTimeout(() => {
+      clearAllImages();
+      updateStatus("PDF download ပြီးပါပြီ။ Browser data cleared.");
+    }, 500);
+
   } catch (error) {
     console.error(error);
-    updateStatus("PDF ပြောင်းရာမှာ error ဖြစ်သွားပါတယ်။ Image size လျှော့ပြီးပြန်စမ်းပါ။");
+    updateStatus("PDF ပြောင်းရာမှာ error ဖြစ်သွားပါတယ်။ Image quality ကို Medium/Low ထားပြီး ပြန်စမ်းပါ။");
   } finally {
     convertBtn.disabled = false;
+    sortBtn.disabled = false;
+    clearBtn.disabled = false;
     convertBtn.textContent = "Convert to PDF";
   }
 });
 
-/* Add uploaded files */
+/*
+  Add uploaded files
+*/
 function addFiles(files) {
   const imageFiles = Array.from(files).filter(file =>
     file.type.startsWith("image/")
@@ -116,16 +155,24 @@ function addFiles(files) {
   imageFiles.forEach(file => {
     selectedImages.push({
       id: generateId(),
-      file: file
+      file: file,
+      previewUrl: URL.createObjectURL(file)
     });
   });
 
   sortFilesByName();
   renderPreview();
+
   updateStatus(`${selectedImages.length} images selected and sorted.`);
 }
 
-/* Natural sorting: page1, page2, page10 */
+/*
+  Natural sorting
+  Example:
+  page1.jpg
+  page2.jpg
+  page10.jpg
+*/
 function sortFilesByName() {
   selectedImages.sort((a, b) => {
     return a.file.name.localeCompare(b.file.name, undefined, {
@@ -135,13 +182,13 @@ function sortFilesByName() {
   });
 }
 
-/* Render preview */
+/*
+  Render image preview
+*/
 function renderPreview() {
   preview.innerHTML = "";
 
   selectedImages.forEach((item, index) => {
-    const imageUrl = URL.createObjectURL(item.file);
-
     const div = document.createElement("div");
     div.className = "item";
     div.dataset.id = item.id;
@@ -156,7 +203,7 @@ function renderPreview() {
     removeBtn.dataset.id = item.id;
 
     const img = document.createElement("img");
-    img.src = imageUrl;
+    img.src = item.previewUrl;
     img.alt = item.file.name;
 
     const fileName = document.createElement("p");
@@ -174,7 +221,9 @@ function renderPreview() {
   });
 }
 
-/* Update selectedImages order after drag */
+/*
+  Update selectedImages order after manual drag
+*/
 function updateOrderFromDOM() {
   const ids = Array.from(preview.children).map(child => child.dataset.id);
 
@@ -185,7 +234,9 @@ function updateOrderFromDOM() {
   updateOrderNumbers();
 }
 
-/* Update preview numbers */
+/*
+  Update preview order number
+*/
 function updateOrderNumbers() {
   const numbers = document.querySelectorAll(".order-number");
 
@@ -194,7 +245,10 @@ function updateOrderNumbers() {
   });
 }
 
-/* Normal PDF: one image per page */
+/*
+  Normal PDF
+  One image per page
+*/
 async function createNormalPdf() {
   updateStatus("Normal PDF ပြောင်းနေပါတယ်...");
 
@@ -207,15 +261,19 @@ async function createNormalPdf() {
   const pdf = new jsPDF({
     orientation: orientation,
     unit: "mm",
-    format: pageSize
+    format: pageSize,
+    compress: true
   });
 
-  const margin = 0;
+  /*
+    Browser memory မကြီးအောင် image width limit
+  */
+  const MAX_CANVAS_WIDTH = 1400;
 
   for (let i = 0; i < selectedImages.length; i++) {
-    const file = selectedImages[i].file;
-    const img = await loadImage(file);
-    const imageData = imageToJpegDataUrl(img, quality);
+    updateStatus(`Normal PDF ပြောင်းနေပါတယ်... ${i + 1}/${selectedImages.length}`);
+
+    const img = await loadImage(selectedImages[i].file);
 
     if (i !== 0) {
       pdf.addPage();
@@ -224,28 +282,61 @@ async function createNormalPdf() {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    const maxWidth = pageWidth - margin * 2;
-    const maxHeight = pageHeight - margin * 2;
-
     const ratio = Math.min(
-      maxWidth / img.width,
-      maxHeight / img.height
+      pageWidth / img.width,
+      pageHeight / img.height
     );
 
-    const imgWidth = img.width * ratio;
-    const imgHeight = img.height * ratio;
+    const imgWidthMm = img.width * ratio;
+    const imgHeightMm = img.height * ratio;
 
-    const x = (pageWidth - imgWidth) / 2;
-    const y = (pageHeight - imgHeight) / 2;
+    const x = (pageWidth - imgWidthMm) / 2;
+    const y = (pageHeight - imgHeightMm) / 2;
 
-    pdf.addImage(imageData, "JPEG", x, y, imgWidth, imgHeight);
+    const canvasWidth = Math.min(img.width, MAX_CANVAS_WIDTH);
+    const canvasHeight = Math.ceil((img.height * canvasWidth) / img.width);
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+
+    const imageData = canvasToJpegDataUrl(canvas, quality);
+
+    pdf.addImage(
+      imageData,
+      "JPEG",
+      x,
+      y,
+      imgWidthMm,
+      imgHeightMm,
+      undefined,
+      "FAST"
+    );
+
+    /*
+      Memory release
+    */
+    canvas.width = 0;
+    canvas.height = 0;
+
+    await waitFrame();
   }
 
   pdf.save("normal-images.pdf");
-  updateStatus("Normal PDF download ပြီးပါပြီ။");
 }
 
-/* Continuous PDF: images joined vertically with no gap */
+/*
+  Continuous PDF
+  Images are joined vertically without gap.
+  Large image count friendly method.
+*/
 async function createContinuousPdf() {
   updateStatus("Continuous PDF ပြောင်းနေပါတယ်...");
 
@@ -255,120 +346,172 @@ async function createContinuousPdf() {
   const orientation = orientationSelect.value;
   const quality = Number(imageQualitySelect.value);
 
-  const tempPdf = new jsPDF({
+  const pdf = new jsPDF({
     orientation: orientation,
     unit: "mm",
-    format: pageSize
+    format: pageSize,
+    compress: true
   });
 
-  const pdfWidthMm = tempPdf.internal.pageSize.getWidth();
+  const pageWidthMm = pdf.internal.pageSize.getWidth();
+  const pageHeightMm = pdf.internal.pageSize.getHeight();
 
   /*
-    1 mm ≈ 3.7795 px
-    PDF width ကို px ပြောင်းပြီး image အားလုံးကို width တူအောင် scale လုပ်မယ်
+    Important:
+    Canvas တစ်ခုတည်းကို အကြီးကြီးမလုပ်ဘဲ
+    image တစ်ခုချင်း / slice တစ်ခုချင်း PDF ထဲထည့်မယ်။
+    ဒါကြောင့် image 100+ လည်း handle ပိုကောင်းမယ်။
   */
-  const targetWidthPx = Math.floor(pdfWidthMm * 3.7795);
-
-  const loadedImages = [];
-
-  for (let i = 0; i < selectedImages.length; i++) {
-    const img = await loadImage(selectedImages[i].file);
-    loadedImages.push(img);
-  }
-
-  let totalHeightPx = 0;
-  const scaledHeights = [];
-
-  loadedImages.forEach(img => {
-    const scaledHeight = Math.floor((img.height * targetWidthPx) / img.width);
-    scaledHeights.push(scaledHeight);
-    totalHeightPx += scaledHeight;
-  });
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  canvas.width = targetWidthPx;
-  canvas.height = totalHeightPx;
-
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const MAX_CANVAS_WIDTH = 1400;
 
   let currentY = 0;
 
-  loadedImages.forEach((img, index) => {
-    const drawHeight = scaledHeights[index];
+  for (let i = 0; i < selectedImages.length; i++) {
+    updateStatus(`Continuous PDF ပြောင်းနေပါတယ်... ${i + 1}/${selectedImages.length}`);
 
-    /*
-      x = 0
-      y = currentY
-      width = targetWidthPx
-      height = drawHeight
+    const img = await loadImage(selectedImages[i].file);
 
-      ဒီနေရာမှာ gap မထည့်ထားလို့ image တွေ ပူးနေမယ်
-    */
-    ctx.drawImage(img, 0, currentY, targetWidthPx, drawHeight);
+    let sourceY = 0;
 
-    currentY += drawHeight;
-  });
+    while (sourceY < img.height) {
+      let remainingPageHeightMm = pageHeightMm - currentY;
 
-  const mergedImageData = canvas.toDataURL("image/jpeg", quality);
+      /*
+        Current page ပြည့်သွားရင် page အသစ်ထည့်မယ်
+      */
+      if (remainingPageHeightMm < 1) {
+        pdf.addPage();
+        currentY = 0;
+        remainingPageHeightMm = pageHeightMm;
+      }
 
-  const pxToMm = px => px * 0.264583;
-  const pdfHeightMm = pxToMm(totalHeightPx);
+      /*
+        PDF page ထဲကျန်တဲ့ height အတိုင်း
+        original image ထဲက ဖြတ်ယူမယ့် pixel height တွက်မယ်
+      */
+      const sourceHeightThatFits = Math.floor(
+        (remainingPageHeightMm * img.width) / pageWidthMm
+      );
 
-  const pdf = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: [pdfWidthMm, pdfHeightMm]
-  });
+      const sourceHeight = Math.min(
+        img.height - sourceY,
+        Math.max(1, sourceHeightThatFits)
+      );
 
-  pdf.addImage(
-    mergedImageData,
-    "JPEG",
-    0,
-    0,
-    pdfWidthMm,
-    pdfHeightMm
-  );
+      const sliceHeightMm = (sourceHeight * pageWidthMm) / img.width;
+
+      /*
+        Slice canvas
+      */
+      const canvasWidth = Math.min(img.width, MAX_CANVAS_WIDTH);
+      const canvasHeight = Math.ceil((sourceHeight * canvasWidth) / img.width);
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.drawImage(
+        img,
+        0,
+        sourceY,
+        img.width,
+        sourceHeight,
+        0,
+        0,
+        canvasWidth,
+        canvasHeight
+      );
+
+      const imageData = canvasToJpegDataUrl(canvas, quality);
+
+      pdf.addImage(
+        imageData,
+        "JPEG",
+        0,
+        currentY,
+        pageWidthMm,
+        sliceHeightMm,
+        undefined,
+        "FAST"
+      );
+
+      currentY += sliceHeightMm;
+      sourceY += sourceHeight;
+
+      /*
+        Memory release
+      */
+      canvas.width = 0;
+      canvas.height = 0;
+
+      await waitFrame();
+    }
+  }
 
   pdf.save("continuous-images.pdf");
-  updateStatus("ပုံတွေ ပူးနေတဲ့ Continuous PDF download ပြီးပါပြီ။");
 }
 
-/* Load image */
+/*
+  Load image from File
+*/
 function loadImage(file) {
   return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
     const img = new Image();
 
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Image load failed"));
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
 
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Image load failed"));
+    };
+
+    img.src = url;
   });
 }
 
-/* Convert image to JPEG data URL */
-function imageToJpegDataUrl(img, quality = 0.95) {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  /*
-    PNG / WEBP transparent background ဖြစ်ခဲ့ရင်
-    PDF ထဲမှာ black မဖြစ်အောင် white background ခံထားတာ
-  */
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.drawImage(img, 0, 0);
-
+/*
+  Canvas to JPEG
+*/
+function canvasToJpegDataUrl(canvas, quality = 0.85) {
   return canvas.toDataURL("image/jpeg", quality);
 }
 
-/* Generate unique ID */
+/*
+  Clear browser selected images, preview, input, object URLs
+*/
+function clearAllImages() {
+  selectedImages.forEach(item => {
+    if (item.previewUrl) {
+      URL.revokeObjectURL(item.previewUrl);
+    }
+  });
+
+  selectedImages = [];
+  imageInput.value = "";
+  preview.innerHTML = "";
+}
+
+/*
+  Wait one frame to keep browser responsive
+*/
+function waitFrame() {
+  return new Promise(resolve => {
+    requestAnimationFrame(resolve);
+  });
+}
+
+/*
+  Generate unique ID
+*/
 function generateId() {
   if (window.crypto && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -377,12 +520,16 @@ function generateId() {
   return Date.now().toString() + Math.random().toString(16).slice(2);
 }
 
-/* Status text */
+/*
+  Status text
+*/
 function updateStatus(message) {
   statusText.textContent = message;
 }
 
-/* Prevent HTML injection in filename */
+/*
+  Prevent HTML injection from file name
+*/
 function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text;
