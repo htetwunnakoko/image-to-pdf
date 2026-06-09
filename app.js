@@ -122,9 +122,7 @@ const translations = {
   }
 };
 
-/*
-  Manual drag reorder
-*/
+/* Manual drag reorder */
 new Sortable(preview, {
   animation: 150,
   handle: ".drag-handle",
@@ -132,9 +130,7 @@ new Sortable(preview, {
   onEnd: updateOrderFromDOM
 });
 
-/*
-  Init language
-*/
+/* Init language */
 if (languageSelect) {
   languageSelect.addEventListener("change", function () {
     setLanguage(this.value);
@@ -144,70 +140,52 @@ if (languageSelect) {
 setLanguage(currentLang);
 updateStatusByKey("initialStatus");
 
-/*
-  Click upload
-*/
+/* Upload input */
 imageInput.addEventListener("change", function () {
   addFiles(this.files);
   imageInput.value = "";
 });
 
-/*
-  Drag over
-*/
+/* Drag events */
 dropZone.addEventListener("dragover", function (e) {
   e.preventDefault();
   dropZone.classList.add("drag-over");
 });
 
-/*
-  Drag leave
-*/
 dropZone.addEventListener("dragleave", function () {
   dropZone.classList.remove("drag-over");
 });
 
-/*
-  Drop upload
-*/
 dropZone.addEventListener("drop", function (e) {
   e.preventDefault();
   dropZone.classList.remove("drag-over");
   addFiles(e.dataTransfer.files);
 });
 
-/*
-  Sort button
-*/
+/* Sort */
 sortBtn.addEventListener("click", function () {
   sortFilesByName();
   renderPreview();
   updateStatusByKey("sorted");
 });
 
-/*
-  Clear button
-*/
+/* Clear */
 clearBtn.addEventListener("click", function () {
   clearAllImages();
   updateStatusByKey("cleared");
 });
 
-/*
-  Remove one image
-*/
+/* Remove one image */
 preview.addEventListener("click", function (e) {
   if (e.target.classList.contains("remove-btn")) {
     const id = e.target.dataset.id;
 
     const removedItem = selectedImages.find(item => item.id === id);
-
     if (removedItem && removedItem.previewUrl) {
       URL.revokeObjectURL(removedItem.previewUrl);
     }
 
     selectedImages = selectedImages.filter(item => item.id !== id);
-
     renderPreview();
 
     if (selectedImages.length === 0) {
@@ -220,10 +198,7 @@ preview.addEventListener("click", function (e) {
   }
 });
 
-/*
-  Convert button
-  PDF တန်းမထုတ်ဘဲ filename edit modal ကိုအရင်ဖွင့်မယ်
-*/
+/* Open filename modal before generating PDF */
 convertBtn.addEventListener("click", function () {
   if (selectedImages.length === 0) {
     updateStatusByKey("noImages");
@@ -243,9 +218,7 @@ convertBtn.addEventListener("click", function () {
   }, 100);
 });
 
-/*
-  Confirm PDF button
-*/
+/* Confirm PDF create */
 confirmPdfBtn.addEventListener("click", async function () {
   if (selectedImages.length === 0) {
     closeFileNameModal();
@@ -278,10 +251,6 @@ confirmPdfBtn.addEventListener("click", async function () {
       await createNormalPdf(fileName);
     }
 
-    /*
-      PDF ထုတ်ပြီးတာနဲ့ browser ထဲက selected files,
-      preview, input, object URLs တွေ clear လုပ်မယ်
-    */
     setTimeout(() => {
       clearAllImages();
       updateStatusByKey("pdfDoneClear");
@@ -295,17 +264,13 @@ confirmPdfBtn.addEventListener("click", async function () {
   }
 });
 
-/*
-  Cancel PDF button
-*/
+/* Cancel PDF create */
 cancelPdfBtn.addEventListener("click", function () {
   closeFileNameModal();
   updateStatusByKey("cancelled");
 });
 
-/*
-  Modal input keyboard support
-*/
+/* Modal keyboard */
 pdfFileNameInput.addEventListener("keydown", function (e) {
   if (e.key === "Enter") {
     confirmPdfBtn.click();
@@ -317,9 +282,7 @@ pdfFileNameInput.addEventListener("keydown", function (e) {
   }
 });
 
-/*
-  Modal outside click close
-*/
+/* Modal outside click */
 fileNameModal.addEventListener("click", function (e) {
   if (e.target === fileNameModal) {
     closeFileNameModal();
@@ -327,9 +290,7 @@ fileNameModal.addEventListener("click", function (e) {
   }
 });
 
-/*
-  Add uploaded files
-*/
+/* Add files */
 function addFiles(files) {
   const imageFiles = Array.from(files).filter(file =>
     file.type.startsWith("image/")
@@ -356,13 +317,7 @@ function addFiles(files) {
   });
 }
 
-/*
-  Natural sorting
-  Example:
-  page1.jpg
-  page2.jpg
-  page10.jpg
-*/
+/* Natural sort */
 function sortFilesByName() {
   selectedImages.sort((a, b) => {
     return a.file.name.localeCompare(b.file.name, undefined, {
@@ -372,9 +327,7 @@ function sortFilesByName() {
   });
 }
 
-/*
-  Render preview
-*/
+/* Render preview */
 function renderPreview() {
   preview.innerHTML = "";
 
@@ -411,9 +364,7 @@ function renderPreview() {
   });
 }
 
-/*
-  Update selectedImages order after drag
-*/
+/* Reorder selectedImages from DOM */
 function updateOrderFromDOM() {
   const ids = Array.from(preview.children).map(child => child.dataset.id);
 
@@ -424,9 +375,7 @@ function updateOrderFromDOM() {
   updateOrderNumbers();
 }
 
-/*
-  Update preview numbers
-*/
+/* Update preview numbering */
 function updateOrderNumbers() {
   const numbers = document.querySelectorAll(".order-number");
 
@@ -435,10 +384,7 @@ function updateOrderNumbers() {
   });
 }
 
-/*
-  Normal PDF
-  One image per page
-*/
+/* Normal PDF: one image per page */
 async function createNormalPdf(fileName = "normal-images.pdf") {
   updateStatusByKey("normalStart");
 
@@ -487,9 +433,7 @@ async function createNormalPdf(fileName = "normal-images.pdf") {
     const canvasHeight = Math.ceil((img.height * canvasWidth) / img.width);
 
     const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d", {
-      alpha: false
-    });
+    const ctx = canvas.getContext("2d", { alpha: false });
 
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
@@ -524,11 +468,10 @@ async function createNormalPdf(fileName = "normal-images.pdf") {
   pdf.save(fileName);
 }
 
-/*
-  Continuous PDF
-  Images joined vertically without visible gaps.
-  100+ images friendly method.
-*/
+/* Enhanced Continuous PDF:
+   - stitch images vertically with no gap
+   - chunk pages to avoid giant canvas issues
+   - edge trim to reduce join lines */
 async function createContinuousPdf(fileName = "continuous-images.pdf") {
   updateStatusByKey("continuousStart");
 
@@ -538,9 +481,6 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
   const orientation = orientationSelect.value;
   const quality = Number(imageQualitySelect.value);
 
-  /*
-    PDF width ကို base reference အဖြစ်ယူမယ်
-  */
   const tempPdf = new jsPDF({
     orientation: orientation,
     unit: "mm",
@@ -550,28 +490,13 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
 
   const pdfWidthMm = tempPdf.internal.pageSize.getWidth();
 
-  /*
-    Canvas setting
-    TARGET_WIDTH_PX = stitched page width
-    MAX_PAGE_HEIGHT_PX = page တစ်ခုပေါ်မှာ အများဆုံးပေါင်းမယ့် height
-    ဒီနည်းက giant canvas မဖြစ်အောင် chunk page လုပ်ပေးတယ်
-  */
   const TARGET_WIDTH_PX = 1400;
   const MAX_PAGE_HEIGHT_PX = 14000;
-
-  /*
-    image edge ပေါ်က line ပါလာရင် နည်းနည်း crop လုပ်ဖို့
-    0 ထားလည်းရတယ်
-    1~2 px လောက်ထားရင် image ၂ ပုံဆက်တဲ့နေရာမှာ line ပျောက်တတ်တယ်
-  */
   const EDGE_TRIM_PX = 2;
 
   let pdf = null;
   let isFirstPdfPage = true;
 
-  /*
-    Current stitched page canvas
-  */
   let pageCanvas = document.createElement("canvas");
   let pageCtx = pageCanvas.getContext("2d", { alpha: false });
 
@@ -583,9 +508,6 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
 
   let usedHeightPx = 0;
 
-  /*
-    flush current canvas page into PDF
-  */
   async function flushCurrentPage() {
     if (usedHeightPx <= 0) return;
 
@@ -647,9 +569,6 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
       );
     }
 
-    /*
-      reset page canvas
-    */
     pageCtx.fillStyle = "#ffffff";
     pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
     usedHeightPx = 0;
@@ -660,9 +579,6 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
     await waitFrame();
   }
 
-  /*
-    loop all uploaded images
-  */
   for (let i = 0; i < selectedImages.length; i++) {
     updateStatusByKey("continuousProcessing", {
       current: i + 1,
@@ -673,9 +589,6 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
 
     let sourceY = 0;
 
-    /*
-      top edge trim for all images except first image
-    */
     if (i > 0) {
       sourceY = EDGE_TRIM_PX;
     }
@@ -683,17 +596,11 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
     while (sourceY < img.height) {
       const availableHeightPx = MAX_PAGE_HEIGHT_PX - usedHeightPx;
 
-      /*
-        current stitched page full ဖြစ်ရင် flush
-      */
       if (availableHeightPx <= 0) {
         await flushCurrentPage();
         continue;
       }
 
-      /*
-        current image ထဲက ဘယ်လောက်ပိုင်းကို ဒီ stitched page ထဲထည့်မလဲ
-      */
       const sourceHeightThatFits = Math.floor(
         (availableHeightPx * img.width) / TARGET_WIDTH_PX
       );
@@ -709,10 +616,6 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
         (sourceHeight * TARGET_WIDTH_PX) / img.width
       );
 
-      /*
-        image slice ကို stitched page canvas ပေါ် draw
-        gap = 0
-      */
       pageCtx.drawImage(
         img,
         0,
@@ -728,9 +631,6 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
       usedHeightPx += drawHeightPx;
       sourceY += sourceHeight;
 
-      /*
-        safety: page ပြည့်သွားရင် flush
-      */
       if (usedHeightPx >= MAX_PAGE_HEIGHT_PX) {
         await flushCurrentPage();
       }
@@ -739,9 +639,6 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
     }
   }
 
-  /*
-    last stitched page
-  */
   await flushCurrentPage();
 
   if (pdf) {
@@ -750,16 +647,11 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
     throw new Error("PDF could not be created.");
   }
 
-  /*
-    memory release
-  */
   pageCanvas.width = 0;
   pageCanvas.height = 0;
 }
 
-/*
-  Load image from File
-*/
+/* Load image */
 function loadImage(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -779,16 +671,12 @@ function loadImage(file) {
   });
 }
 
-/*
-  Canvas to JPEG
-*/
+/* Canvas to JPEG */
 function canvasToJpegDataUrl(canvas, quality = 0.85) {
   return canvas.toDataURL("image/jpeg", quality);
 }
 
-/*
-  Clear selected images, preview, input, object URLs
-*/
+/* Clear all selected images */
 function clearAllImages() {
   selectedImages.forEach(item => {
     if (item.previewUrl) {
@@ -801,9 +689,7 @@ function clearAllImages() {
   preview.innerHTML = "";
 }
 
-/*
-  Loading state
-*/
+/* Loading state */
 function setLoadingState(isLoading) {
   convertBtn.disabled = isLoading;
   sortBtn.disabled = isLoading;
@@ -820,9 +706,7 @@ function setLoadingState(isLoading) {
     : t("confirmPdfBtn");
 }
 
-/*
-  Language helper
-*/
+/* Translation helper */
 function t(key, values = {}) {
   let text = translations[currentLang]?.[key] || key;
 
@@ -839,7 +723,6 @@ function setLanguage(lang) {
 
   document.querySelectorAll("[data-i18n]").forEach(element => {
     const key = element.dataset.i18n;
-
     if (translations[currentLang][key]) {
       element.textContent = translations[currentLang][key];
     }
@@ -854,18 +737,13 @@ function setLanguage(lang) {
 
 function updateStatusByKey(key, values = {}, save = true) {
   if (save) {
-    lastStatus = {
-      key,
-      values
-    };
+    lastStatus = { key, values };
   }
 
   statusText.textContent = t(key, values);
 }
 
-/*
-  Modal helpers
-*/
+/* Modal helpers */
 function openFileNameModal() {
   fileNameModal.classList.remove("hidden");
 }
@@ -874,9 +752,7 @@ function closeFileNameModal() {
   fileNameModal.classList.add("hidden");
 }
 
-/*
-  Default PDF filename
-*/
+/* Default PDF name */
 function generateDefaultPdfName() {
   const now = new Date();
 
@@ -889,9 +765,7 @@ function generateDefaultPdfName() {
   return `images-${year}${month}${day}-${hour}${minute}`;
 }
 
-/*
-  Remove invalid filename characters
-*/
+/* Sanitize filename */
 function sanitizePdfFileName(fileName) {
   return fileName
     .replace(/[\\/:*?"<>|]/g, "-")
@@ -899,18 +773,14 @@ function sanitizePdfFileName(fileName) {
     .trim();
 }
 
-/*
-  Wait one frame to keep browser responsive
-*/
+/* Wait next frame */
 function waitFrame() {
   return new Promise(resolve => {
     requestAnimationFrame(resolve);
   });
 }
 
-/*
-  Generate unique ID
-*/
+/* Generate unique id */
 function generateId() {
   if (window.crypto && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -919,9 +789,7 @@ function generateId() {
   return Date.now().toString() + Math.random().toString(16).slice(2);
 }
 
-/*
-  Prevent HTML injection from filename
-*/
+/* Escape filename text */
 function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text;
