@@ -538,29 +538,131 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
   const orientation = orientationSelect.value;
   const quality = Number(imageQualitySelect.value);
 
-  const pdf = new jsPDF({
+  /*
+    PDF width ကို base reference အဖြစ်ယူမယ်
+  */
+  const tempPdf = new jsPDF({
     orientation: orientation,
     unit: "mm",
     format: pageSize,
     compress: true
   });
 
-  const pageWidthMm = pdf.internal.pageSize.getWidth();
-  const pageHeightMm = pdf.internal.pageSize.getHeight();
+  const pdfWidthMm = tempPdf.internal.pageSize.getWidth();
 
   /*
-    Gap မပေါ်အောင် tiny overlap ထည့်ထားတာပါ။
-    0.15mm က မျက်စိနဲ့မသိသာပေမယ့် white line ကိုကာပေးပါတယ်။
+    Canvas setting
+    TARGET_WIDTH_PX = stitched page width
+    MAX_PAGE_HEIGHT_PX = page တစ်ခုပေါ်မှာ အများဆုံးပေါင်းမယ့် height
+    ဒီနည်းက giant canvas မဖြစ်အောင် chunk page လုပ်ပေးတယ်
   */
-  const OVERLAP_MM = 0.15;
+  const TARGET_WIDTH_PX = 1400;
+  const MAX_PAGE_HEIGHT_PX = 14000;
 
   /*
-    Browser memory မပြည့်အောင် canvas width limit
+    image edge ပေါ်က line ပါလာရင် နည်းနည်း crop လုပ်ဖို့
+    0 ထားလည်းရတယ်
+    1~2 px လောက်ထားရင် image ၂ ပုံဆက်တဲ့နေရာမှာ line ပျောက်တတ်တယ်
   */
-  const MAX_CANVAS_WIDTH = 1400;
+  const EDGE_TRIM_PX = 2;
 
-  let currentY = 0;
+  let pdf = null;
+  let isFirstPdfPage = true;
 
+  /*
+    Current stitched page canvas
+  */
+  let pageCanvas = document.createElement("canvas");
+  let pageCtx = pageCanvas.getContext("2d", { alpha: false });
+
+  pageCanvas.width = TARGET_WIDTH_PX;
+  pageCanvas.height = MAX_PAGE_HEIGHT_PX;
+
+  pageCtx.fillStyle = "#ffffff";
+  pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+  let usedHeightPx = 0;
+
+  /*
+    flush current canvas page into PDF
+  */
+  async function flushCurrentPage() {
+    if (usedHeightPx <= 0) return;
+
+    const exportCanvas = document.createElement("canvas");
+    const exportCtx = exportCanvas.getContext("2d", { alpha: false });
+
+    exportCanvas.width = TARGET_WIDTH_PX;
+    exportCanvas.height = usedHeightPx;
+
+    exportCtx.fillStyle = "#ffffff";
+    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+    exportCtx.drawImage(
+      pageCanvas,
+      0,
+      0,
+      TARGET_WIDTH_PX,
+      usedHeightPx,
+      0,
+      0,
+      TARGET_WIDTH_PX,
+      usedHeightPx
+    );
+
+    const pageHeightMm = (usedHeightPx * pdfWidthMm) / TARGET_WIDTH_PX;
+    const imageData = exportCanvas.toDataURL("image/jpeg", quality);
+
+    if (isFirstPdfPage) {
+      pdf = new jsPDF({
+        orientation: orientation,
+        unit: "mm",
+        format: [pdfWidthMm, pageHeightMm],
+        compress: true
+      });
+
+      pdf.addImage(
+        imageData,
+        "JPEG",
+        0,
+        0,
+        pdfWidthMm,
+        pageHeightMm,
+        undefined,
+        "FAST"
+      );
+
+      isFirstPdfPage = false;
+    } else {
+      pdf.addPage([pdfWidthMm, pageHeightMm], orientation);
+
+      pdf.addImage(
+        imageData,
+        "JPEG",
+        0,
+        0,
+        pdfWidthMm,
+        pageHeightMm,
+        undefined,
+        "FAST"
+      );
+    }
+
+    /*
+      reset page canvas
+    */
+    pageCtx.fillStyle = "#ffffff";
+    pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    usedHeightPx = 0;
+
+    exportCanvas.width = 0;
+    exportCanvas.height = 0;
+
+    await waitFrame();
+  }
+
+  /*
+    loop all uploaded images
+  */
   for (let i = 0; i < selectedImages.length; i++) {
     updateStatusByKey("continuousProcessing", {
       current: i + 1,
@@ -571,103 +673,88 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
 
     let sourceY = 0;
 
+    /*
+      top edge trim for all images except first image
+    */
+    if (i > 0) {
+      sourceY = EDGE_TRIM_PX;
+    }
+
     while (sourceY < img.height) {
-      let remainingPageHeightMm = pageHeightMm - currentY;
+      const availableHeightPx = MAX_PAGE_HEIGHT_PX - usedHeightPx;
 
       /*
-        Current page ပြည့်သွားရင် page အသစ်
+        current stitched page full ဖြစ်ရင် flush
       */
-      if (remainingPageHeightMm <= 0.5) {
-        pdf.addPage();
-        currentY = 0;
-        remainingPageHeightMm = pageHeightMm;
+      if (availableHeightPx <= 0) {
+        await flushCurrentPage();
+        continue;
       }
 
       /*
-        PDF page ထဲ ကျန်နေတဲ့ height အတွက်
-        original image ထဲက ဘယ်လောက် pixel ဖြတ်ယူမလဲတွက်မယ်
+        current image ထဲက ဘယ်လောက်ပိုင်းကို ဒီ stitched page ထဲထည့်မလဲ
       */
       const sourceHeightThatFits = Math.floor(
-        (remainingPageHeightMm * img.width) / pageWidthMm
+        (availableHeightPx * img.width) / TARGET_WIDTH_PX
       );
 
+      const remainingSourceHeight = img.height - sourceY;
+
       const sourceHeight = Math.min(
-        img.height - sourceY,
+        remainingSourceHeight,
         Math.max(1, sourceHeightThatFits)
       );
 
-      let sliceHeightMm = (sourceHeight * pageWidthMm) / img.width;
+      const drawHeightPx = Math.ceil(
+        (sourceHeight * TARGET_WIDTH_PX) / img.width
+      );
 
-      const canvasWidth = Math.min(img.width, MAX_CANVAS_WIDTH);
-      const canvasHeight = Math.ceil((sourceHeight * canvasWidth) / img.width);
-
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d", {
-        alpha: false
-      });
-
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-
-      ctx.drawImage(
+      /*
+        image slice ကို stitched page canvas ပေါ် draw
+        gap = 0
+      */
+      pageCtx.drawImage(
         img,
         0,
         sourceY,
         img.width,
         sourceHeight,
         0,
-        0,
-        canvasWidth,
-        canvasHeight
+        usedHeightPx,
+        TARGET_WIDTH_PX,
+        drawHeightPx
       );
 
-      const imageData = canvasToJpegDataUrl(canvas, quality);
-
-      /*
-        currentY > 0 ဖြစ်ရင် previous content နဲ့ 0.15mm ထပ်အုပ်မယ်။
-        Image ကြား white gap မပေါ်အောင် ဒီနေရာက အဓိကပါ။
-      */
-      const drawY = currentY > 0 ? currentY - OVERLAP_MM : currentY;
-
-      let drawHeight = currentY > 0
-        ? sliceHeightMm + OVERLAP_MM
-        : sliceHeightMm;
-
-      /*
-        Page အပြင်မကျော်အောင် control
-      */
-      if (drawY + drawHeight > pageHeightMm) {
-        drawHeight = pageHeightMm - drawY;
-      }
-
-      pdf.addImage(
-        imageData,
-        "JPEG",
-        0,
-        drawY,
-        pageWidthMm,
-        drawHeight,
-        undefined,
-        "FAST"
-      );
-
-      currentY += sliceHeightMm;
+      usedHeightPx += drawHeightPx;
       sourceY += sourceHeight;
 
-      canvas.width = 0;
-      canvas.height = 0;
+      /*
+        safety: page ပြည့်သွားရင် flush
+      */
+      if (usedHeightPx >= MAX_PAGE_HEIGHT_PX) {
+        await flushCurrentPage();
+      }
 
       await waitFrame();
     }
   }
 
-  pdf.save(fileName);
+  /*
+    last stitched page
+  */
+  await flushCurrentPage();
+
+  if (pdf) {
+    pdf.save(fileName);
+  } else {
+    throw new Error("PDF could not be created.");
+  }
+
+  /*
+    memory release
+  */
+  pageCanvas.width = 0;
+  pageCanvas.height = 0;
 }
 
 /*
