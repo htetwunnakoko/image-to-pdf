@@ -11,36 +11,64 @@
   <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  <!-- SortableJS -->
+  <!-- SortableJS for manual drag reorder -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 </head>
 <body>
 
   <div class="container">
     <div class="card">
-      <h1>Image to PDF Converter</h1>
 
-      <p class="subtitle">
+      <h1 data-i18n="appTitle">Image to PDF Converter</h1>
+
+      <p class="subtitle" data-i18n="subtitle">
         Image တွေ upload လုပ်ပြီး filename အလိုက် sort စီကာ PDF ပြောင်းပါ
       </p>
 
+      <!-- Upload Area -->
       <label class="upload-box" id="dropZone">
         <input type="file" id="imageInput" accept="image/*" multiple />
-        <span>📁 Click သို့မဟုတ် Drag & Drop Images</span>
-        <small>PNG, JPG, JPEG, WEBP စတဲ့ image files တွေ upload လုပ်နိုင်ပါတယ်</small>
+
+        <span data-i18n="uploadText">
+          📁 Click သို့မဟုတ် Drag & Drop Images
+        </span>
+
+        <small data-i18n="uploadHint">
+          PNG, JPG, JPEG, WEBP စတဲ့ image files တွေ upload လုပ်နိုင်ပါတယ်
+        </small>
       </label>
 
+      <!-- Settings -->
       <div class="settings">
+
         <div>
-          <label for="pdfMode">PDF Mode</label>
-          <select id="pdfMode">
-            <option value="continuous">Continuous - ပုံတွေကို ပူးပြီးထုတ်မယ်</option>
-            <option value="normal">Normal - တစ်ပုံတစ်မျက်နှာ</option>
+          <label for="languageSelect" data-i18n="languageLabel">
+            ဘာသာစကား
+          </label>
+          <select id="languageSelect">
+            <option value="my">မြန်မာ</option>
+            <option value="en">English</option>
           </select>
         </div>
 
         <div>
-          <label for="pageSize">PDF Page Size</label>
+          <label for="pdfMode" data-i18n="pdfModeLabel">
+            PDF Mode
+          </label>
+          <select id="pdfMode">
+            <option value="continuous" data-i18n="continuousMode">
+              Continuous - ပုံတွေကို ပူးပြီးထုတ်မယ်
+            </option>
+            <option value="normal" data-i18n="normalMode">
+              Normal - တစ်ပုံတစ်မျက်နှာ
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label for="pageSize" data-i18n="pageSizeLabel">
+            PDF Page Size
+          </label>
           <select id="pageSize">
             <option value="a4">A4</option>
             <option value="letter">Letter</option>
@@ -48,7 +76,9 @@
         </div>
 
         <div>
-          <label for="orientation">Orientation</label>
+          <label for="orientation" data-i18n="orientationLabel">
+            Orientation
+          </label>
           <select id="orientation">
             <option value="portrait">Portrait</option>
             <option value="landscape">Landscape</option>
@@ -56,29 +86,79 @@
         </div>
 
         <div>
-          <label for="imageQuality">Image Quality</label>
+          <label for="imageQuality" data-i18n="imageQualityLabel">
+            Image Quality
+          </label>
           <select id="imageQuality">
             <option value="0.95">High</option>
-            <option value="0.85">Medium</option>
+            <option value="0.85" selected>Medium</option>
             <option value="0.70">Low</option>
           </select>
         </div>
+
       </div>
 
+      <!-- Action Buttons -->
       <div class="actions">
-        <button id="sortBtn">Sort by File Name</button>
-        <button id="convertBtn">Convert to PDF</button>
-        <button id="clearBtn" class="danger">Clear All</button>
+        <button id="sortBtn" data-i18n="sortBtn">
+          Sort by File Name
+        </button>
+
+        <button id="convertBtn" data-i18n="convertBtn">
+          Convert to PDF
+        </button>
+
+        <button id="clearBtn" class="danger" data-i18n="clearBtn">
+          Clear All
+        </button>
       </div>
 
+      <!-- Status -->
       <p id="status">No images selected.</p>
 
+      <!-- Preview -->
       <div class="preview-header">
-        <h3>Images Preview</h3>
-        <p>Card တွေကို drag ဆွဲပြီး manual reorder လုပ်နိုင်ပါတယ်။ PDF ထုတ်တဲ့အခါ ဒီ order အတိုင်းထွက်ပါမယ်။</p>
+        <h3 data-i18n="previewTitle">Images Preview</h3>
+
+        <p data-i18n="previewHint">
+          Card တွေကို drag ဆွဲပြီး manual reorder လုပ်နိုင်ပါတယ်။ PDF ထုတ်တဲ့အခါ ဒီ order အတိုင်းထွက်ပါမယ်။
+        </p>
       </div>
 
       <div id="preview" class="preview"></div>
+
+    </div>
+  </div>
+
+  <!-- PDF File Name Modal -->
+  <div id="fileNameModal" class="modal hidden">
+    <div class="modal-box">
+
+      <h3 data-i18n="modalTitle">
+        PDF File Name
+      </h3>
+
+      <p class="modal-text" data-i18n="modalText">
+        PDF ထုတ်မယ့် file name ကို ပြင်နိုင်ပါတယ်။
+      </p>
+
+      <input
+        type="text"
+        id="pdfFileNameInput"
+        placeholder="converted-images"
+        autocomplete="off"
+      />
+
+      <div class="modal-actions">
+        <button id="confirmPdfBtn" data-i18n="confirmPdfBtn">
+          Create PDF
+        </button>
+
+        <button id="cancelPdfBtn" class="danger" data-i18n="cancelPdfBtn">
+          Cancel
+        </button>
+      </div>
+
     </div>
   </div>
 
