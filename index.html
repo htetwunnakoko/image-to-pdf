@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Image to PDF Converter</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- SortableJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+      <h1>Image to PDF Converter</h1>
+
+      <p class="subtitle">
+        Image တွေ upload လုပ်ပြီး filename အလိုက် sort စီကာ PDF ပြောင်းပါ
+      </p>
+
+      <label class="upload-box" id="dropZone">
+        <input type="file" id="imageInput" accept="image/*" multiple />
+        <span>📁 Click သို့မဟုတ် Drag & Drop Images</span>
+        <small>PNG, JPG, JPEG, WEBP စတဲ့ image files တွေ upload လုပ်နိုင်ပါတယ်</small>
+      </label>
+
+      <div class="settings">
+        <div>
+          <label for="pdfMode">PDF Mode</label>
+          <select id="pdfMode">
+            <option value="continuous">Continuous - ပုံတွေကို ပူးပြီးထုတ်မယ်</option>
+            <option value="normal">Normal - တစ်ပုံတစ်မျက်နှာ</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="pageSize">PDF Page Size</label>
+          <select id="pageSize">
+            <option value="a4">A4</option>
+            <option value="letter">Letter</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="orientation">Orientation</label>
+          <select id="orientation">
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="imageQuality">Image Quality</label>
+          <select id="imageQuality">
+            <option value="0.95">High</option>
+            <option value="0.85">Medium</option>
+            <option value="0.70">Low</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="sortBtn">Sort by File Name</button>
+        <button id="convertBtn">Convert to PDF</button>
+        <button id="clearBtn" class="danger">Clear All</button>
+      </div>
+
+      <p id="status">No images selected.</p>
+
+      <div class="preview-header">
+        <h3>Images Preview</h3>
+        <p>Card တွေကို drag ဆွဲပြီး manual reorder လုပ်နိုင်ပါတယ်။ PDF ထုတ်တဲ့အခါ ဒီ order အတိုင်းထွက်ပါမယ်။</p>
+      </div>
+
+      <div id="preview" class="preview"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
