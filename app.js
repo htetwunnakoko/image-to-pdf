@@ -509,7 +509,7 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
   /*
     Image ကြား white/black hairline မပေါ်အောင် အနည်းငယ်ထပ်အုပ်မယ်။
   */
-  const OVERLAP_MM = 0.25;
+  const OVERLAP_MM = 0.5;
 
   /*
     တချို့ image တွေမှာ top edge line ပါလာတတ်လို့ နည်းနည်း trim လုပ်တာ။
