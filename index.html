@@ -50,8 +50,8 @@
             ဘာသာစကား
           </label>
           <select id="languageSelect">
-            <option value="my">မြန်မာ</option>
-            <option value="en">English</option>
+            <option value="my" data-i18n="languageMyanmar">မြန်မာ</option>
+            <option value="en" data-i18n="languageEnglish">English</option>
           </select>
         </div>
 
@@ -74,8 +74,8 @@
             PDF Page Size
           </label>
           <select id="pageSize">
-            <option value="a4">A4</option>
-            <option value="letter">Letter</option>
+            <option value="a4" data-i18n="pageSizeA4">A4</option>
+            <option value="letter" data-i18n="pageSizeLetter">Letter</option>
           </select>
         </div>
 
@@ -84,8 +84,8 @@
             Orientation
           </label>
           <select id="orientation">
-            <option value="portrait">Portrait</option>
-            <option value="landscape">Landscape</option>
+            <option value="portrait" data-i18n="orientationPortrait">Portrait</option>
+            <option value="landscape" data-i18n="orientationLandscape">Landscape</option>
           </select>
         </div>
 
@@ -94,9 +94,9 @@
             Image Quality
           </label>
           <select id="imageQuality">
-            <option value="0.95">High</option>
-            <option value="0.85" selected>Medium</option>
-            <option value="0.70">Low</option>
+            <option value="0.95" data-i18n="qualityHigh">High</option>
+            <option value="0.85" selected data-i18n="qualityMedium">Medium</option>
+            <option value="0.70" data-i18n="qualityLow">Low</option>
           </select>
         </div>
 
@@ -150,6 +150,7 @@
         type="text"
         id="pdfFileNameInput"
         placeholder="converted-images"
+        data-i18n-placeholder="pdfFileNamePlaceholder"
         autocomplete="off"
       />
 

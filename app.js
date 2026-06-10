@@ -18,7 +18,7 @@ const pdfFileNameInput = document.getElementById("pdfFileNameInput");
 const confirmPdfBtn = document.getElementById("confirmPdfBtn");
 const cancelPdfBtn = document.getElementById("cancelPdfBtn");
 
-const APP_VERSION = "v2.0.2";
+const APP_VERSION = "v2.0.3";
 
 document.addEventListener("DOMContentLoaded", () => {
   const versionEl = document.getElementById("appVersion");
@@ -39,53 +39,69 @@ let lastStatus = {
 const translations = {
   my: {
     languageLabel: "ဘာသာစကား",
-    appTitle: "Image to PDF Converter",
-    subtitle: "Image တွေ upload လုပ်ပြီး filename အလိုက် sort စီကာ PDF ပြောင်းပါ",
-    uploadText: "📁 Click သို့မဟုတ် Drag & Drop Images",
-    uploadHint: "PNG, JPG, JPEG, WEBP စတဲ့ image files တွေ upload လုပ်နိုင်ပါတယ်",
+    languageMyanmar: "မြန်မာ",
+    languageEnglish: "အင်္ဂလိပ်",
 
-    pdfModeLabel: "PDF Mode",
-    continuousMode: "Continuous - ပုံတွေကို ပူးပြီးထုတ်မယ်",
-    normalMode: "Normal - တစ်ပုံတစ်မျက်နှာ",
+    appTitle: "ပုံမှ PDF ပြောင်းစက်",
+    subtitle: "ပုံတွေကို တင်ပြီး ဖိုင်နာမည်အလိုက်စီကာ PDF ဖိုင်အဖြစ် ပြောင်းနိုင်ပါတယ်။",
+    uploadText: "📁 နှိပ်ပါ သို့မဟုတ် ပုံတွေကို ဆွဲထည့်ပါ",
+    uploadHint: "PNG, JPG, JPEG, WEBP ပုံဖိုင်တွေကို တစ်ပုံချင်း သို့မဟုတ် အများကြီး တင်နိုင်ပါတယ်။",
 
-    pageSizeLabel: "PDF Page Size",
-    orientationLabel: "Orientation",
-    imageQualityLabel: "Image Quality",
+    pdfModeLabel: "PDF ပုံစံ",
+    continuousMode: "ဆက်တိုက်ပူးထားမယ် - ပုံတွေကြား မကွာအောင်",
+    normalMode: "ပုံမှန် - တစ်ပုံကို စာမျက်နှာတစ်မျက်နှာ",
 
-    sortBtn: "Sort by File Name",
-    convertBtn: "Convert to PDF",
-    convertingBtn: "Converting...",
-    clearBtn: "Clear All",
+    pageSizeLabel: "PDF စာရွက်အရွယ်အစား",
+    pageSizeA4: "A4",
+    pageSizeLetter: "Letter",
 
-    previewTitle: "Images Preview",
-    previewHint: "Card တွေကို drag ဆွဲပြီး manual reorder လုပ်နိုင်ပါတယ်။ PDF ထုတ်တဲ့အခါ ဒီ order အတိုင်းထွက်ပါမယ်။",
+    orientationLabel: "စာရွက်အနေအထား",
+    orientationPortrait: "ဒေါင်လိုက်",
+    orientationLandscape: "အလျားလိုက်",
 
-    modalTitle: "PDF File Name",
-    modalText: "PDF ထုတ်မယ့် file name ကို ပြင်နိုင်ပါတယ်။",
-    confirmPdfBtn: "Create PDF",
-    creatingPdfBtn: "Creating...",
-    cancelPdfBtn: "Cancel",
+    imageQualityLabel: "ပုံအရည်အသွေး",
+    qualityHigh: "အမြင့်",
+    qualityMedium: "အလယ်အလတ်",
+    qualityLow: "အနိမ့်",
 
-    initialStatus: "No images selected.",
-    noImages: "ပထမဆုံး image upload လုပ်ပါ။",
-    noImageFile: "Image file မတွေ့ပါ။",
-    cleared: "Cleared all images.",
-    sorted: "Images sorted by filename.",
-    selectedSorted: "{count} images selected and sorted.",
-    selected: "{count} images selected.",
-    cancelled: "PDF create cancelled.",
+    sortBtn: "ဖိုင်နာမည်အလိုက် စီမယ်",
+    convertBtn: "PDF ပြောင်းမယ်",
+    convertingBtn: "ပြောင်းနေပါတယ်...",
+    clearBtn: "အားလုံးဖျက်မယ်",
 
-    normalStart: "Normal PDF ပြောင်းနေပါတယ်...",
-    continuousStart: "Continuous PDF ပြောင်းနေပါတယ်...",
-    normalProcessing: "Normal PDF ပြောင်းနေပါတယ်... {current}/{total}",
-    continuousProcessing: "Continuous PDF ပြောင်းနေပါတယ်... {current}/{total}",
+    previewTitle: "ပုံများ အစမ်းကြည့်ရန်",
+    previewHint: "ပုံကတ်တွေကို ဆွဲရွှေ့ပြီး ကိုယ်လိုချင်တဲ့အစီအစဉ် ပြန်စီနိုင်ပါတယ်။ PDF ထုတ်တဲ့အခါ ဒီအစီအစဉ်အတိုင်း ထွက်ပါမယ်။",
 
-    pdfDoneClear: "PDF download ပြီးပါပြီ။ Browser data cleared.",
-    pdfError: "PDF ပြောင်းရာမှာ error ဖြစ်သွားပါတယ်။ Image quality ကို Medium/Low ထားပြီး ပြန်စမ်းပါ။"
+    modalTitle: "PDF ဖိုင်နာမည်",
+    modalText: "PDF မထုတ်ခင် ဖိုင်နာမည်ကို ပြင်နိုင်ပါတယ်။",
+    pdfFileNamePlaceholder: "ဥပမာ - manga-chapter-01",
+    confirmPdfBtn: "PDF ထုတ်မယ်",
+    creatingPdfBtn: "ထုတ်နေပါတယ်...",
+    cancelPdfBtn: "မလုပ်တော့ပါ",
+
+    initialStatus: "ပုံမရွေးရသေးပါ။",
+    noImages: "ပထမဆုံး ပုံတင်ပါ။",
+    noImageFile: "ပုံဖိုင် မတွေ့ပါ။",
+    cleared: "ပုံအားလုံးကို ဖျက်ပြီးပါပြီ။",
+    sorted: "ဖိုင်နာမည်အလိုက် စီပြီးပါပြီ။",
+    selectedSorted: "ပုံ {count} ပုံ ရွေးပြီး ဖိုင်နာမည်အလိုက် စီထားပါတယ်။",
+    selected: "ပုံ {count} ပုံ ရွေးထားပါတယ်။",
+    cancelled: "PDF ထုတ်ခြင်းကို ရပ်လိုက်ပါပြီ။",
+
+    normalStart: "ပုံမှန် PDF ပြောင်းနေပါတယ်...",
+    continuousStart: "ဆက်တိုက် PDF ပြောင်းနေပါတယ်...",
+    normalProcessing: "ပုံမှန် PDF ပြောင်းနေပါတယ်... {current}/{total}",
+    continuousProcessing: "ဆက်တိုက် PDF ပြောင်းနေပါတယ်... {current}/{total}",
+
+    pdfDoneClear: "PDF download ပြီးပါပြီ။ Browser ထဲက ရွေးထားတဲ့ပုံတွေကို ရှင်းပြီးပါပြီ။",
+    pdfError: "PDF ပြောင်းရာမှာ အမှားဖြစ်သွားပါတယ်။ ပုံအရည်အသွေးကို အလယ်အလတ် သို့မဟုတ် အနိမ့်ထားပြီး ပြန်စမ်းပါ။"
   },
 
   en: {
     languageLabel: "Language",
+    languageMyanmar: "Myanmar",
+    languageEnglish: "English",
+
     appTitle: "Image to PDF Converter",
     subtitle: "Upload images, sort them by filename, and convert them to PDF.",
     uploadText: "📁 Click or Drag & Drop Images",
@@ -96,8 +112,17 @@ const translations = {
     normalMode: "Normal - One image per page",
 
     pageSizeLabel: "PDF Page Size",
+    pageSizeA4: "A4",
+    pageSizeLetter: "Letter",
+
     orientationLabel: "Orientation",
+    orientationPortrait: "Portrait",
+    orientationLandscape: "Landscape",
+
     imageQualityLabel: "Image Quality",
+    qualityHigh: "High",
+    qualityMedium: "Medium",
+    qualityLow: "Low",
 
     sortBtn: "Sort by File Name",
     convertBtn: "Convert to PDF",
@@ -109,6 +134,7 @@ const translations = {
 
     modalTitle: "PDF File Name",
     modalText: "You can edit the file name before creating the PDF.",
+    pdfFileNamePlaceholder: "Example: manga-chapter-01",
     confirmPdfBtn: "Create PDF",
     creatingPdfBtn: "Creating...",
     cancelPdfBtn: "Cancel",
@@ -774,10 +800,20 @@ function setLanguage(lang) {
   currentLang = lang;
   localStorage.setItem("appLanguage", lang);
 
+  document.documentElement.lang = currentLang === "my" ? "my" : "en";
+  document.title = t("appTitle");
+
   document.querySelectorAll("[data-i18n]").forEach(element => {
     const key = element.dataset.i18n;
     if (translations[currentLang][key]) {
       element.textContent = translations[currentLang][key];
+    }
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(element => {
+    const key = element.dataset.i18nPlaceholder;
+    if (translations[currentLang][key]) {
+      element.placeholder = translations[currentLang][key];
     }
   });
 
