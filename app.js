@@ -18,6 +18,16 @@ const pdfFileNameInput = document.getElementById("pdfFileNameInput");
 const confirmPdfBtn = document.getElementById("confirmPdfBtn");
 const cancelPdfBtn = document.getElementById("cancelPdfBtn");
 
+const APP_VERSION = "v2.0.1";
+
+document.addEventListener("DOMContentLoaded", () => {
+  const versionEl = document.getElementById("appVersion");
+
+  if (versionEl) {
+    versionEl.textContent = APP_VERSION;
+  }
+});
+
 let selectedImages = [];
 let currentLang = localStorage.getItem("appLanguage") || "my";
 
