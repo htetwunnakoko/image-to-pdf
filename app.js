@@ -40,7 +40,7 @@ const translations = {
   my: {
     languageLabel: "ဘာသာစကား",
     languageMyanmar: "မြန်မာ",
-    languageEnglish: "အင်္ဂလိပ်",
+    languageEnglish: "English",
 
     appTitle: "Image to PDF Converter",
     subtitle: "ပုံတွေကို တင်ပြီး ဖိုင်နာမည်အလိုက်စီကာ PDF ဖိုင်အဖြစ် ပြောင်းနိုင်ပါတယ်။",
