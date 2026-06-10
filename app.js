@@ -42,7 +42,7 @@ const translations = {
     languageMyanmar: "မြန်မာ",
     languageEnglish: "အင်္ဂလိပ်",
 
-    appTitle: "ပုံမှ PDF ပြောင်းစက်",
+    appTitle: "Image to PDF Converter",
     subtitle: "ပုံတွေကို တင်ပြီး ဖိုင်နာမည်အလိုက်စီကာ PDF ဖိုင်အဖြစ် ပြောင်းနိုင်ပါတယ်။",
     uploadText: "📁 နှိပ်ပါ သို့မဟုတ် ပုံတွေကို ဆွဲထည့်ပါ",
     uploadHint: "PNG, JPG, JPEG, WEBP ပုံဖိုင်တွေကို တစ်ပုံချင်း သို့မဟုတ် အများကြီး တင်နိုင်ပါတယ်။",
