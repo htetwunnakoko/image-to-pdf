@@ -481,6 +481,9 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
   const orientation = orientationSelect.value;
   const quality = Number(imageQualitySelect.value);
 
+  /*
+    PDF width ကို page size/orientation အတိုင်းယူမယ်
+  */
   const tempPdf = new jsPDF({
     orientation: orientation,
     unit: "mm",
@@ -490,95 +493,39 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
 
   const pdfWidthMm = tempPdf.internal.pageSize.getWidth();
 
+  /*
+    jsPDF / PDF viewer တွေမှာ page height limit ရှိတတ်လို့
+    5000mm လောက်ကို safe long-page limit အဖြစ်သုံးထားပါတယ်။
+    ဒါကြောင့် ပုံ ၅ ခုလောက်နဲ့ မခွဲတော့ဘဲ ပိုရှည်ရှည်ဆက်နိုင်မယ်။
+  */
+  const MAX_PDF_PAGE_HEIGHT_MM = 5000;
+
+  /*
+    Canvas width ကို အရမ်းမကြီးအောင်ထားတာ။
+    Quality ကောင်းချင်ရင် 1400, phone performance ကောင်းချင်ရင် 1000/1200 ထားနိုင်ပါတယ်။
+  */
   const TARGET_WIDTH_PX = 1400;
-  const MAX_PAGE_HEIGHT_PX = 14000;
-  const EDGE_TRIM_PX = 2;
 
-  let pdf = null;
-  let isFirstPdfPage = true;
+  /*
+    Image ကြား white/black hairline မပေါ်အောင် အနည်းငယ်ထပ်အုပ်မယ်။
+  */
+  const OVERLAP_MM = 0.25;
 
-  let pageCanvas = document.createElement("canvas");
-  let pageCtx = pageCanvas.getContext("2d", { alpha: false });
+  /*
+    တချို့ image တွေမှာ top edge line ပါလာတတ်လို့ နည်းနည်း trim လုပ်တာ။
+    Content ဖြတ်သွားတယ်ထင်ရင် 0 ပြန်ထားပါ။
+  */
+  const EDGE_TRIM_PX = 1;
 
-  pageCanvas.width = TARGET_WIDTH_PX;
-  pageCanvas.height = MAX_PAGE_HEIGHT_PX;
+  const pages = [];
+  let currentPage = {
+    heightMm: 0,
+    parts: []
+  };
 
-  pageCtx.fillStyle = "#ffffff";
-  pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-
-  let usedHeightPx = 0;
-
-  async function flushCurrentPage() {
-    if (usedHeightPx <= 0) return;
-
-    const exportCanvas = document.createElement("canvas");
-    const exportCtx = exportCanvas.getContext("2d", { alpha: false });
-
-    exportCanvas.width = TARGET_WIDTH_PX;
-    exportCanvas.height = usedHeightPx;
-
-    exportCtx.fillStyle = "#ffffff";
-    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-    exportCtx.drawImage(
-      pageCanvas,
-      0,
-      0,
-      TARGET_WIDTH_PX,
-      usedHeightPx,
-      0,
-      0,
-      TARGET_WIDTH_PX,
-      usedHeightPx
-    );
-
-    const pageHeightMm = (usedHeightPx * pdfWidthMm) / TARGET_WIDTH_PX;
-    const imageData = exportCanvas.toDataURL("image/jpeg", quality);
-
-    if (isFirstPdfPage) {
-      pdf = new jsPDF({
-        orientation: orientation,
-        unit: "mm",
-        format: [pdfWidthMm, pageHeightMm],
-        compress: true
-      });
-
-      pdf.addImage(
-        imageData,
-        "JPEG",
-        0,
-        0,
-        pdfWidthMm,
-        pageHeightMm,
-        undefined,
-        "FAST"
-      );
-
-      isFirstPdfPage = false;
-    } else {
-      pdf.addPage([pdfWidthMm, pageHeightMm], orientation);
-
-      pdf.addImage(
-        imageData,
-        "JPEG",
-        0,
-        0,
-        pdfWidthMm,
-        pageHeightMm,
-        undefined,
-        "FAST"
-      );
-    }
-
-    pageCtx.fillStyle = "#ffffff";
-    pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-    usedHeightPx = 0;
-
-    exportCanvas.width = 0;
-    exportCanvas.height = 0;
-
-    await waitFrame();
-  }
-
+  /*
+    Step 1: PDF page တွေကို ဘယ်လိုခွဲမလဲ အရင်တွက်မယ်
+  */
   for (let i = 0; i < selectedImages.length; i++) {
     updateStatusByKey("continuousProcessing", {
       current: i + 1,
@@ -587,22 +534,31 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
 
     const img = await loadImage(selectedImages[i].file);
 
-    let sourceY = 0;
-
-    if (i > 0) {
-      sourceY = EDGE_TRIM_PX;
-    }
+    let sourceY = i > 0 ? EDGE_TRIM_PX : 0;
 
     while (sourceY < img.height) {
-      const availableHeightPx = MAX_PAGE_HEIGHT_PX - usedHeightPx;
+      let remainingPageHeightMm =
+        MAX_PDF_PAGE_HEIGHT_MM - currentPage.heightMm;
 
-      if (availableHeightPx <= 0) {
-        await flushCurrentPage();
-        continue;
+      /*
+        Current long page ထဲမှာ နေရာနည်းလွန်းရင် page အသစ်စမယ်
+      */
+      if (remainingPageHeightMm < 20) {
+        pages.push(currentPage);
+
+        currentPage = {
+          heightMm: 0,
+          parts: []
+        };
+
+        remainingPageHeightMm = MAX_PDF_PAGE_HEIGHT_MM;
       }
 
+      /*
+        ဒီ page ထဲဝင်နိုင်မယ့် source image height ကိုတွက်မယ်
+      */
       const sourceHeightThatFits = Math.floor(
-        (availableHeightPx * img.width) / TARGET_WIDTH_PX
+        (remainingPageHeightMm * img.width) / pdfWidthMm
       );
 
       const remainingSourceHeight = img.height - sourceY;
@@ -612,43 +568,130 @@ async function createContinuousPdf(fileName = "continuous-images.pdf") {
         Math.max(1, sourceHeightThatFits)
       );
 
-      const drawHeightPx = Math.ceil(
-        (sourceHeight * TARGET_WIDTH_PX) / img.width
+      const drawHeightMm = (sourceHeight * pdfWidthMm) / img.width;
+
+      currentPage.parts.push({
+        imageIndex: i,
+        sourceY: sourceY,
+        sourceHeight: sourceHeight,
+        yMm: currentPage.heightMm,
+        heightMm: drawHeightMm
+      });
+
+      currentPage.heightMm += drawHeightMm;
+      sourceY += sourceHeight;
+    }
+
+    await waitFrame();
+  }
+
+  if (currentPage.parts.length > 0) {
+    pages.push(currentPage);
+  }
+
+  if (pages.length === 0) {
+    throw new Error("No pages to create.");
+  }
+
+  /*
+    Step 2: တကယ် PDF ထဲထည့်မယ်
+  */
+  let pdf = null;
+
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+    const page = pages[pageIndex];
+
+    /*
+      PDF page height ကို တိတိကျကျ current content height အတိုင်းထားမယ်။
+      ဒါကြောင့် page အောက်မှာ blank space ကြီးမကျန်တော့ဘူး။
+    */
+    const pageHeightMm = Math.min(
+      page.heightMm,
+      MAX_PDF_PAGE_HEIGHT_MM
+    );
+
+    if (pageIndex === 0) {
+      pdf = new jsPDF({
+        orientation: orientation,
+        unit: "mm",
+        format: [pdfWidthMm, pageHeightMm],
+        compress: true
+      });
+    } else {
+      pdf.addPage([pdfWidthMm, pageHeightMm], orientation);
+    }
+
+    for (let partIndex = 0; partIndex < page.parts.length; partIndex++) {
+      const part = page.parts[partIndex];
+      const img = await loadImage(selectedImages[part.imageIndex].file);
+
+      const canvasWidth = Math.min(img.width, TARGET_WIDTH_PX);
+      const canvasHeight = Math.ceil(
+        (part.sourceHeight * canvasWidth) / img.width
       );
 
-      pageCtx.drawImage(
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", {
+        alpha: false
+      });
+
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+
+      ctx.drawImage(
         img,
         0,
-        sourceY,
+        part.sourceY,
         img.width,
-        sourceHeight,
+        part.sourceHeight,
         0,
-        usedHeightPx,
-        TARGET_WIDTH_PX,
-        drawHeightPx
+        0,
+        canvasWidth,
+        canvasHeight
       );
 
-      usedHeightPx += drawHeightPx;
-      sourceY += sourceHeight;
+      const imageData = canvasToJpegDataUrl(canvas, quality);
 
-      if (usedHeightPx >= MAX_PAGE_HEIGHT_PX) {
-        await flushCurrentPage();
+      /*
+        Image/part ကြား gap မပေါ်အောင် overlap ထည့်မယ်
+      */
+      const drawY = part.yMm > 0
+        ? part.yMm - OVERLAP_MM
+        : part.yMm;
+
+      let drawHeight = part.yMm > 0
+        ? part.heightMm + OVERLAP_MM
+        : part.heightMm;
+
+      if (drawY + drawHeight > pageHeightMm) {
+        drawHeight = pageHeightMm - drawY;
       }
+
+      pdf.addImage(
+        imageData,
+        "JPEG",
+        0,
+        drawY,
+        pdfWidthMm,
+        drawHeight,
+        undefined,
+        "FAST"
+      );
+
+      canvas.width = 0;
+      canvas.height = 0;
 
       await waitFrame();
     }
   }
 
-  await flushCurrentPage();
-
-  if (pdf) {
-    pdf.save(fileName);
-  } else {
-    throw new Error("PDF could not be created.");
-  }
-
-  pageCanvas.width = 0;
-  pageCanvas.height = 0;
+  pdf.save(fileName);
 }
 
 /* Load image */
