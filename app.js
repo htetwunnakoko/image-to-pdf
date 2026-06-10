@@ -18,7 +18,7 @@ const pdfFileNameInput = document.getElementById("pdfFileNameInput");
 const confirmPdfBtn = document.getElementById("confirmPdfBtn");
 const cancelPdfBtn = document.getElementById("cancelPdfBtn");
 
-const APP_VERSION = "v2.0.1";
+const APP_VERSION = "v2.0.2";
 
 document.addEventListener("DOMContentLoaded", () => {
   const versionEl = document.getElementById("appVersion");
